@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid'); // ✅ import uuid
+const { v4: uuidv4 } = require('uuid');
 
-// Temporary in-memory store (replace with DB later)
 const payments = {};
 
+// TEST
+router.get("/test", (req, res) => {
+    res.send("ROUTE IS WORKING");
+});
+
+// CREATE
 router.post("/create", async (req, res) => {
     try {
         const { phone, amount, wallet, product } = req.body;
@@ -28,24 +33,39 @@ router.post("/create", async (req, res) => {
             createdAt: Date.now()
         };
 
-        console.log("NEW PAYMENT REQUEST");
-        console.log(payments[reference]);
-
         return res.json({
             success: true,
-            reference: reference,
+            reference,
             status: "PENDING",
             pollUrl: `/payment/status/${reference}`
         });
 
     } catch (error) {
-        console.log(error);
-
         return res.status(500).json({
             success: false,
             message: "Server error"
         });
     }
+});
+
+// STATUS
+router.get("/status/:reference", (req, res) => {
+    const { reference } = req.params;
+
+    const payment = payments[reference];
+
+    if (!payment) {
+        return res.status(404).json({
+            success: false,
+            message: "Payment not found"
+        });
+    }
+
+    return res.json({
+        success: true,
+        status: payment.status,
+        data: payment
+    });
 });
 
 module.exports = router;
